@@ -3,15 +3,15 @@
 #include <cstdint>
 #include <random>
 #include <span>
+#include <memory>
 
 #include "Config.hpp"
 #include "Instruction.hpp"
 
-
 namespace Chip8 {
     enum class LoadResult { Ok, TooLarge };
     enum class StepResult { Ok, WaitingForKey, UnknownOpcode, StackOverflow, StackUnderflow };
-
+    enum class AudioResult { Ok, Error };
 class Machine {
 private:
     struct SystemRegs {
@@ -37,13 +37,28 @@ private:
 
     std::uint16_t Fetch();
     
+    std::unique_ptr<sf::Sound>          buzzer_snd_;
+    std::unique_ptr<sf::SoundBuffer>    buzzer_buf_;
+    std::vector<std::int16_t>           tone_samples;
+    std::vector<sf::SoundChannel>       channels_map;
+
+    const int sample_rate = 48000;
+    const int tone_freq = 440;
+    const int channels = 2;
+    const int sample_periods = sample_rate / tone_freq;
+    bool audio_ready_ = false;
+    
 public:
     explicit Machine(std::uint32_t seed = std::random_device{}());
     LoadResult Load(std::span<const std::uint8_t> rom);
     StepResult Step();
+
+    AudioResult PlaySound();
+    AudioResult StopSound();
+    
     void TickTimers();
     void SetKey(std::uint8_t key, bool down);
-
+    
     const std::array<std::uint8_t, DISPLAY_HEIGHT * DISPLAY_WIDTH>& Display() const { return display_; }
     bool SoundActive() const { return regs_.sound_timer > 0; }
 };
