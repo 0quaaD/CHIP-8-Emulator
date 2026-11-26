@@ -1,12 +1,41 @@
 #include "Machine.hpp"
 #include <algorithm>
 
+
 namespace Chip8 {
     Machine::Machine(std::uint32_t seed)
         : rng_(seed)
     {
-        std::copy(FONT.begin(), FONT.end(), memory_.begin() + FONT_START);
-    }    
+        std::copy(FONT.begin(), FONT.end(), memory_.begin() + FONT_START);         
+        
+        tone_samples.clear();
+        for (int i = 0; i < sample_periods; i++)
+        {
+            const int16_t level = (i < (sample_periods >> 1)) ? 16000 : -16000;
+            tone_samples.push_back(level);
+            tone_samples.push_back(level);
+        }
+
+        channels_map = {
+            sf::SoundChannel::FrontLeft,
+            sf::SoundChannel::FrontRight,
+        };
+
+        buzzer_buf_ = std::make_unique<sf::SoundBuffer>();
+        bool ok = buzzer_buf_->loadFromSamples(
+            tone_samples.data(),
+            static_cast<std::uint64_t>(tone_samples.size()),
+            channels,
+            static_cast<unsigned int>(sample_rate),
+            channels_map
+        );
+
+        if (ok){
+            buzzer_snd_ = std::make_unique<sf::Sound>(*buzzer_buf_);
+            buzzer_snd_->setLooping(true);
+            audio_ready_ = true;
+        }    
+    }
 
     LoadResult Machine::Load(std::span<const std::uint8_t> rom)
     {
@@ -35,6 +64,27 @@ namespace Chip8 {
         const std::uint16_t lo = memory_[(regs_.pc + 1) & MEMORY_MASK];
         regs_.pc = static_cast<std::uint16_t>((regs_.pc + 2) & MEMORY_MASK);
         return static_cast<std::uint16_t>((hi << 8) | lo);
+    }
+
+    AudioResult Machine::PlaySound()
+    {   
+        if (!audio_ready_ || !buzzer_snd_) return AudioResult::Error;
+
+        const auto buzzer_status = buzzer_snd_->getStatus();
+        if (buzzer_status != sf::SoundSource::Status::Playing)
+            buzzer_snd_->play();
+        
+        return AudioResult::Ok;
+    }
+    AudioResult Machine::StopSound()
+    {  
+        if (!audio_ready_ || !buzzer_snd_)
+            return AudioResult::Error;
+
+        if (buzzer_snd_)
+            buzzer_snd_->stop();
+    
+        return AudioResult::Ok;
     }
 
     StepResult Machine::Step()
@@ -231,6 +281,7 @@ namespace Chip8 {
                     if (!keys_[v_[ins.x] & 0xF])
                         regs_.pc += 2;
                 }
+                else return StepResult::UnknownOpcode;
                 break;
             }
             case 0xF:
@@ -320,4 +371,4 @@ namespace Chip8 {
     }
 
 
-}
+}   
