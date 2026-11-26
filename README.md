@@ -14,7 +14,7 @@ Behaves as **original CHIP-8** (COSMAC VIP style).
 - [x] Passes every line of the `5-quirks` test ROM on the CHIP-8 platform
 - [x] Runs the IBM logo test ROM and several demo ROMs
 - [x] `3-corax+`, `4-flags` and `6-keypad` test ROMs: verified, all of them executes correctly
-- [ ] Sound (the sound timer runs, but no tone is played)
+- [x] Sound (the sound timer runs, but no tone is played)
 - [ ] Configurable quirks / SUPER-CHIP and XO-CHIP support
 - [ ] Automated unit tests
 
@@ -22,7 +22,7 @@ Behaves as **original CHIP-8** (COSMAC VIP style).
 
 - A C++20 compiler (developed with GCC / MinGW-w64 on Windows)
 - [CMake](https://cmake.org/) 3.22 or newer
-- [SFML 3](https://www.sfml-dev.org/) (Graphics module)
+- [SFML 3.1.0](https://www.sfml-dev.org/) (Graphics module)
 - Optional: [Ninja](https://ninja-build.org/) for faster builds
 
 ## Build
